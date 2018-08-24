@@ -61,11 +61,33 @@ public:
                         cursor->parent->right = nullptr;
                     }
                 }
+                // update descendants
+                Node<T> *pivot = cursor->parent;
+                while(true) {
+                    pivot->num_descendants--;
+                    if (pivot == this->root) {
+                        break;
+                    }
+                    else {
+                        pivot = pivot->parent;
+                    }
+                }
                 delete cursor;
                 return;
             }
             else if (!cursor->left) {
-                cursor = rotateLeft(cursor);
+                rotateLeft(cursor);
+            }
+            else if (!cursor->right) {
+                rotateRight(cursor);
+            }
+            else {
+                if (cursor->left->num_descendants > cursor->right->num_descendants) {
+                    rotateLeft(cursor);
+                }
+                else {
+                    rotateRight(cursor);
+                }
             }
         }
 
@@ -96,22 +118,73 @@ private:
         }
     }
 
-    Node<T> *rotateLeft(Node<T> *root) {
+    // root is the initial parent and pivot is the child to take root's place
+    void *rotateLeft(Node<T> *root) {
         Node<T> *pivot = root->right;
+
+        // calculate number of descendants before changing the tree
+        root->num_descendants -= pivot->num_descendants + 1;
+        if (pivot->left) {
+            root->num_descendants += pivot->left->num_descendants + 1;
+            pivot->num_descendants -= pivot->left->num_descendants + 1;
+        }
+        pivot->num_descendants += root->num_descendants + 1;
+
+        // start rotation
         root->right = pivot->left;
-        pivot->left->parent = root;
+        if (pivot->left) {
+            pivot->left->parent = root;
+        }
         pivot->left = root;
+        if (root->parent) {
+            if (root->parent->left == root) {
+                root->parent->left = pivot;
+            }
+            else {
+                root->parent->right = pivot;
+            }
+        }
+
+        pivot->parent = root->parent;
         root->parent = pivot;
-        return pivot;
+        if (root == this->root) {
+            this->root = pivot;
+        }
     }
 
-    Node<T> *rotateRight(Node<T> *root) {
+    void *rotateRight(Node<T> *root) {
         Node<T> *pivot = root->left;
+
+        // calculate number of descendants before changing the tree
+        root->num_descendants -= pivot->num_descendants + 1;
+        if (pivot->right) {
+            root->num_descendants += pivot->right->num_descendants + 1;
+            pivot->num_descendants -= pivot->right->num_descendants + 1;
+        }
+        pivot->num_descendants += root->num_descendants + 1;
+
+        // start rotation
         root->left = pivot->right;
-        pivot->right->parent = root;
+        if (pivot->right) {
+            pivot->right->parent = root;
+        }
         pivot->right = root;
+
+        if (root->parent) {
+            if (root->parent->left == root) {
+                root->parent->left = pivot;
+            }
+            else {
+                root->parent->right = pivot;
+            }
+        }
+
+        pivot->parent = root->parent;
         root->parent = pivot;
-        return pivot;
+
+        if (root == this->root) {
+            this->root = pivot;
+        }
     }
 };
 

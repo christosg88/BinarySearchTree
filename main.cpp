@@ -12,6 +12,10 @@ int main() {
     tree.insert(9);
 
     std::cout << tree;
+    tree.erase(2);
+    std::cout << tree;
+    tree.erase(6);
+    std::cout << tree;
 
     return 0;
 }
