@@ -11,9 +11,9 @@ public:
     Node<T> *left;
     Node<T> *right;
     Node<T> *parent;
-    size_t num_descendants;
+    int height;
 
-    explicit Node(T value) : value(value), left(nullptr), right(nullptr), parent(nullptr), num_descendants(0) {
+    explicit Node(T value) : value(value), left(nullptr), right(nullptr), parent(nullptr), height(0) {
     }
 
     ~Node() {
