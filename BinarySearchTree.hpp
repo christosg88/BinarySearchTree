@@ -5,45 +5,52 @@
 
 #include <iostream>
 #include <stdexcept>
-#include <map>
-#include <vector>
+#include <list>
 #include <queue>
+#include <stack>
 
 template<typename T>
 class BinarySearchTree {
     Node<T> *root;
-
 public:
-    BinarySearchTree() : root(nullptr) {
-    }
-
-    ~BinarySearchTree() {
-        delete root;
-    }
+    BinarySearchTree();
+    ~BinarySearchTree();
     void insert(T const &value);
     void erase(T const &value);
-    friend std::ostream &operator<<(std::ostream &stream, BinarySearchTree<T> const &tree);
+    friend std::ostream &operator<<(std::ostream &stream, BinarySearchTree<T> const &tree) {
+        stream << tree.root << '\n';
+        return stream;
+    }
     void levelOrder() const;
-    void inOrder() const;
+    std::list<Node<T> *> inOrder() const;
+    bool isHeightBalanced() const;
 private:
     Node<T> *find(T const &value) const;
-    int height(Node<T> *cursor) const;
+    int height(Node<T> const *cursor) const;
     void updateHeights(Node<T> *cursor);
-    Node<T> *highestChild(Node<T> *cursor) const;
-    int balanceFactor(Node<T> *cursor);
+    Node<T> *highestChild(Node<T> const *cursor) const;
+    int balanceFactor(Node<T> const *cursor) const;
     void balanceInsertion(Node<T> *leaf);
     void balanceDeletion(Node<T> *cursor);
-    void *rotateLeft(Node<T> *root);
-    void *rotateRight(Node<T> *root);
-    void inOrder(Node<T> *root) const;
+    void rotateLeft(Node<T> *root);
+    void rotateRight(Node<T> *root);
 };
+
+template<typename T>
+BinarySearchTree<T>::BinarySearchTree() : root(nullptr) {
+}
+
+template<typename T>
+BinarySearchTree<T>::~BinarySearchTree() {
+    delete root;
+}
 
 /**
  * Inserts a value to the tree while keeping it balanced
  * @param value The value to be inserted
  */
 template<typename T>
-void BinarySearchTree<T>::insert(const T &value) {
+void BinarySearchTree<T>::insert(T const &value) {
     if (!root) {
         root = new Node<T>(value);
     }
@@ -85,101 +92,91 @@ void BinarySearchTree<T>::erase(T const &value) {
     if (!cursor) {
         throw std::invalid_argument("Value doesn't exists");
     }
-
+    Node<T> *current = nullptr;
     if (cursor->left && cursor->right) {
-        // Deleting a node with two children
+        // Node to be deleted has two children
 
-        // in-order successor node as replacement node
-        Node<T> *in_order_successor = cursor->right;
-        while (true) {
-            if (in_order_successor->left) {
-                in_order_successor = in_order_successor->left;
-            }
-            else {
-                break;
-            }
+        // Find inorder successor of the node
+        Node<T> *inorder_successor = cursor->right;
+        while (inorder_successor->left) {
+            inorder_successor = inorder_successor->left;
         }
 
-        cursor->value = in_order_successor->value;
-        if (!in_order_successor->right) {
-            // If in_order_successor does not have a child
-            // remove in_order_successor from its parent
-            if (in_order_successor->parent->left == in_order_successor) {
-                in_order_successor->parent->left = nullptr;
-            }
-            else {
-                in_order_successor->parent->right = nullptr;
-            }
-            updateHeights(in_order_successor->parent);
-            balanceDeletion(in_order_successor->parent);
-            delete in_order_successor;
+        cursor->value = inorder_successor->value;
+        if (inorder_successor->right) {
+            current = inorder_successor;
+            inorder_successor->value = inorder_successor->right->value;
+            delete inorder_successor->right;
+            current->right = nullptr;
         }
         else {
-            // If in_order_successor has a child, it is a right child.
-            // Replace in_order_successor with right child at in_order_successor's parent.
-            if (in_order_successor->parent->left == in_order_successor) {
-                in_order_successor->parent->left = in_order_successor->right;
+            current = inorder_successor->parent;
+            delete inorder_successor;
+            if (current->left == inorder_successor) {
+                current->left = nullptr;
             }
             else {
-                in_order_successor->parent->right = in_order_successor->right;
+                current->right = nullptr;
             }
-            updateHeights(in_order_successor->right);
-            balanceDeletion(in_order_successor->right);
-            delete in_order_successor;
         }
+
     }
     else if (cursor->left) {
-        // Deleting a node with only left child
-        // update parent
-        if (cursor->parent) {
-            if (cursor->parent->left == cursor) {
-                cursor->parent->left = cursor->left;
-            }
-            else {
-                cursor->parent->right = cursor->left;
-            }
-        }
-        updateHeights(cursor->parent);
-        balanceDeletion(cursor->parent);
-        delete cursor;
-        return;
+        // Node to be deleted has only one right child
+        current = cursor;
+        cursor->value = cursor->left->value;
+        delete cursor->left;
+        current->left = nullptr;
     }
     else if (cursor->right) {
-        // Deleting a node with only right child
-        // update parent
-        if (cursor->parent) {
-            if (cursor->parent->left == cursor) {
-                cursor->parent->left = cursor->right;
-            }
-            else {
-                cursor->parent->right = cursor->right;
-            }
-        }
-        updateHeights(cursor->parent);
-        balanceDeletion(cursor->parent);
-        delete cursor;
+        // Node to be deleted has only one right child
+        current = cursor;
+        cursor->value = cursor->right->value;
+        delete cursor->right;
+        current->right = nullptr;
     }
     else {
-        // Deleting a node with no children
-        // update parent
+        // Node to be deleted is leaf
         if (cursor->parent) {
-            if (cursor->parent->left == cursor) {
-                cursor->parent->left = nullptr;
+            current = cursor->parent;
+            delete cursor;
+            if (current->left == cursor) {
+                current->left = nullptr;
             }
             else {
-                cursor->parent->right = nullptr;
+                current->right = nullptr;
             }
         }
-        updateHeights(cursor->parent);
-        balanceDeletion(cursor->parent);
-        delete cursor;
     }
+    updateHeights(current);
+    balanceDeletion(current);
 }
 
+/**
+ * Traverses tree in-order
+ * Returns a list of nodes in ascending order
+ */
 template<typename T>
-std::ostream &operator<<(std::ostream &stream, const BinarySearchTree<T> &tree) {
-    stream << tree.root << '\n';
-    return stream;
+std::list<Node<T> *> BinarySearchTree<T>::inOrder() const {
+
+    std::list<Node<T> *> in_order;
+    Node<T> *cursor = root;
+    std::stack<Node<T> *> path;
+    do {
+        if (!cursor) {
+            Node<T> *temp = path.top();
+            in_order.emplace_back(temp);
+            cursor = temp->right;
+            path.pop();
+        }
+        else {
+            path.push(cursor);
+            cursor = cursor->left;
+        }
+
+    }while (!path.empty() || cursor);
+
+    return in_order;
 }
 
 /**
@@ -211,14 +208,15 @@ void BinarySearchTree<T>::levelOrder() const {
     std::cout << '\n';
 }
 
-/**
- * Traverses tree in-order
- * Prints nodes in ascending order
- */
 template<typename T>
-void BinarySearchTree<T>::inOrder() const {
-    inOrder(root);
-    std::cout << '\n';
+bool BinarySearchTree<T>::isHeightBalanced() const {
+    std::list<Node<T> *> in_order_list = inOrder();
+    for (Node<T> * const &item:in_order_list) {
+        if (balanceFactor(item) > 1 || balanceFactor(item) < -1) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /**
@@ -227,11 +225,8 @@ void BinarySearchTree<T>::inOrder() const {
  * @param cursor Node whose height will be returned
  */
 template<typename T>
-int BinarySearchTree<T>::height(Node<T> *cursor) const {
-    if (cursor) {
-        return cursor->height;
-    }
-    return -1;
+int BinarySearchTree<T>::height(Node<T> const *cursor) const {
+    return cursor ? cursor->height:-1;
 }
 
 /**
@@ -240,12 +235,9 @@ int BinarySearchTree<T>::height(Node<T> *cursor) const {
  * @param value The value to compare the nodes to
  */
 template<typename T>
-Node<T> *BinarySearchTree<T>::find(const T &value) const {
+Node<T> *BinarySearchTree<T>::find(T const &value) const {
     Node<T> *cursor = root;
-    while (true) {
-        if (!cursor) {
-            return nullptr;
-        }
+    while (cursor) {
         if (cursor->value > value) {
             cursor = cursor->left;
         }
@@ -256,6 +248,7 @@ Node<T> *BinarySearchTree<T>::find(const T &value) const {
             return cursor;
         }
     }
+    return nullptr;
 }
 
 /**
@@ -264,10 +257,9 @@ Node<T> *BinarySearchTree<T>::find(const T &value) const {
  */
 template<typename T>
 void BinarySearchTree<T>::updateHeights(Node<T> *cursor) {
-    Node<T> *temp = cursor;
-    while (temp) {
-        temp->height = std::max(height(temp->left), height(temp->right)) + 1;
-        temp = temp->parent;
+    while (cursor) {
+        cursor->height = std::max(height(cursor->left), height(cursor->right)) + 1;
+        cursor = cursor->parent;
     }
 }
 
@@ -276,7 +268,7 @@ void BinarySearchTree<T>::updateHeights(Node<T> *cursor) {
  * @param cursor The node whose balance factor is returned
  */
 template<typename T>
-int BinarySearchTree<T>::balanceFactor(Node<T> *cursor) {
+int BinarySearchTree<T>::balanceFactor(Node<T> const *cursor) const{
     return height(cursor->left) - height(cursor->right);
 }
 
@@ -288,15 +280,9 @@ template<typename T>
 void BinarySearchTree<T>::balanceInsertion(Node<T> *leaf) {
     Node<T> *pivot = leaf->parent;
     Node<T> *cursor = pivot->parent;
-    if (!cursor) {
-        return;
-    }
-
-    int bf;
     while(cursor) {
-        bf = balanceFactor(cursor);
-        // current cursor is unbalanced.
-        // Left Left case or Left Right case.
+        int bf = balanceFactor(cursor);
+        // if current cursor is unbalanced there are 4 cases
         if (bf > 1) {
             if (pivot->left && pivot->left == leaf) {
                 // Left Left Case
@@ -310,8 +296,6 @@ void BinarySearchTree<T>::balanceInsertion(Node<T> *leaf) {
                 return;
             }
         }
-        // current node is unbalanced.
-        // Right Right case or Right-Left case.
         else if (bf < -1) {
             if (pivot->right && pivot->right == leaf) {
                 // Right Right Case
@@ -337,31 +321,23 @@ void BinarySearchTree<T>::balanceInsertion(Node<T> *leaf) {
  */
 template<typename T>
 void BinarySearchTree<T>::balanceDeletion(Node<T> *cursor) {
-    int bf;
-    Node<T> *pivot;
-    Node<T> *leaf;
     while (cursor) {
-        bf = balanceFactor(cursor);
-        pivot = highestChild(cursor);   // the larger height child of cursor
-        leaf = highestChild(pivot);     // the larger height child of pivot
+        int bf = balanceFactor(cursor);
+        Node<T> *pivot = highestChild(cursor);
 
-        // current cursor is unbalanced.
-        // Left Left case or Left Right case.
+        // if current cursor is unbalanced there are 4 cases
         if (bf > 1) {
-            if (pivot->left && pivot->left == leaf) {
+            if (balanceFactor(pivot) >= 0) {
                 // Left Left Case
                 rotateRight(cursor);
-            }
-            else {
+            } else {
                 // Left Right Case
                 rotateLeft(pivot);
                 rotateRight(cursor);
             }
         }
-        // current node is unbalanced.
-        // Right Right case or Right-Left case.
         else if (bf < -1) {
-            if (pivot->right && pivot->right == leaf) {
+            if (balanceFactor(pivot) <= 0) {
                 // Right Right Case
                 rotateLeft(cursor);
             }
@@ -380,16 +356,8 @@ void BinarySearchTree<T>::balanceDeletion(Node<T> *cursor) {
  * @param cursor The node whose children are compared
  */
 template<typename T>
-Node<T> *BinarySearchTree<T>::highestChild(Node<T> *cursor) const {
-    if (cursor) {
-        if (height(cursor->left) > height(cursor->right)) {
-            return cursor->left;
-        }
-        else if (cursor->right){
-            return cursor->right;
-        }
-    }
-    return nullptr;
+Node<T> *BinarySearchTree<T>::highestChild(Node<T> const *cursor) const {
+    return (height(cursor->left) > height(cursor->right)) ? cursor->left:cursor->right;
 }
 
 /**
@@ -397,7 +365,7 @@ Node<T> *BinarySearchTree<T>::highestChild(Node<T> *cursor) const {
  * @param root The root of the subtree
  */
 template<typename T>
-void *BinarySearchTree<T>::rotateLeft(Node<T> *root) {
+void BinarySearchTree<T>::rotateLeft(Node<T> *root) {
     // root is the initial parent and pivot is the child to take root's place
     Node<T> *pivot = root->right;
 
@@ -429,7 +397,7 @@ void *BinarySearchTree<T>::rotateLeft(Node<T> *root) {
  * @param root The root of the subtree
  */
 template<typename T>
-void *BinarySearchTree<T>::rotateRight(Node<T> *root) {
+void BinarySearchTree<T>::rotateRight(Node<T> *root) {
     // root is the initial parent and pivot is the child to take root's place
     Node<T> *pivot = root->left;
 
@@ -457,18 +425,4 @@ void *BinarySearchTree<T>::rotateRight(Node<T> *root) {
     }
     updateHeights(root);
 }
-
-template<typename T>
-void BinarySearchTree<T>::inOrder(Node<T> *root) const {
-    if (root) {
-        if (root->left) {
-            inOrder(root->left);
-        }
-        std::cout << root->value << ' ';
-        if (root->right) {
-            inOrder(root->right);
-        }
-    }
-}
-
 #endif
