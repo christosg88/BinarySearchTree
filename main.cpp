@@ -1,23 +1,36 @@
 #include "BinarySearchTree.hpp"
 
 #include <iostream>
+#include <random>
+#include <algorithm>
+#include <iterator>
 
 int main() {
+    const int NUM_NUMS = 1000;
+    const int MIN_VAL = -10000, MAX_VAL = 10000;
+
+    // fill a vector with NUM_NUMS random numbers in the range [MIN_VAL, MAX_VAL] that follow a uniform distribution
+    std::random_device dev;
+    std::mt19937 gen(dev());
+    std::uniform_int_distribution<int> dist(MIN_VAL, MAX_VAL);
+    std::vector<int> nums(NUM_NUMS);
+    std::generate(nums.begin(), nums.end(), [&dist, &gen]() {
+        return dist(gen);
+    });
+
     BinarySearchTree<int> tree;
-    tree.insert(50);
-    tree.insert(25);
-    tree.insert(75);
-    tree.insert(10);
-    tree.insert(60);
-    tree.insert(30);
-    tree.insert(80);
-    tree.insert(5);
-    tree.insert(55);
-    tree.insert(15);
-    tree.insert(27);
-    tree.insert(1);
-    tree.levelOrder();
-    tree.erase(80);
-    tree.levelOrder();
-    return 0;
+    for (auto const &item:nums) {
+        tree.insert(item);
+    }
+
+    // Rearrange the elements randomly
+    std::shuffle(nums.begin(), nums.end(), gen);
+    int lim = NUM_NUMS / 100;
+    for (int i = 0; i < lim; ++i) {
+        if (!tree.isHeightBalanced()) {
+            std::cout << "Tree is unbalanced!";
+            break;
+        }
+        tree.erase(nums[i]);
+    }
 }
