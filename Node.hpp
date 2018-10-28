@@ -2,8 +2,6 @@
 #define BINARY_SEARCH_TREE_NODE_HPP
 
 #include <iostream>
-#include <cstddef>
-
 template<typename T>
 class Node {
 public:
@@ -12,16 +10,9 @@ public:
     Node<T> *right;
     Node<T> *parent;
     int height;
-
-    explicit Node(T value) : value(value), left(nullptr), right(nullptr), parent(nullptr), height(0) {
-    }
-
-    ~Node() {
-        delete left;
-        delete right;
-    }
-
-    friend std::ostream &operator<<(std::ostream &stream, Node<T> const *node) {
+    explicit Node(T value);
+    ~Node();
+    friend std::ostream &operator<<(std::ostream &stream, const Node<T> *node) {
         if (node->left) {
             stream << node->left;
         }
@@ -35,5 +26,15 @@ public:
         return stream;
     }
 };
+
+template<typename T>
+Node<T>::Node(T value) : value(value), left(nullptr), right(nullptr), parent(nullptr), height(0) {
+}
+
+template<typename T>
+Node<T>::~Node() {
+    delete left;
+    delete right;
+}
 
 #endif
