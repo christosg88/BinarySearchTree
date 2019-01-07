@@ -21,8 +21,10 @@ public:
         stream << tree.root << '\n';
         return stream;
     }
-    void levelOrder() const;
+    std::vector<std::vector<Node<T> *>> levelOrder() const;
     std::list<Node<T> *> inOrder() const;
+    std::list<Node<T> *> postOrder() const;
+    std::list<Node<T> *> preOrder() const;
     bool isHeightBalanced() const;
 private:
     Node<T> *find(T const &value) const;
@@ -96,7 +98,7 @@ void BinarySearchTree<T>::erase(T const &value) {
     if (cursor->left && cursor->right) {
         // Node to be deleted has two children
 
-        // Find inorder successor of the node
+        // Find in order successor of the node
         Node<T> *inorder_successor = cursor->right;
         while (inorder_successor->left) {
             inorder_successor = inorder_successor->left;
@@ -153,16 +155,16 @@ void BinarySearchTree<T>::erase(T const &value) {
 }
 
 /**
- * Traverses tree in-order
+ * Traverses tree in-order (Left, Root, Right)
  * Returns a list of nodes in ascending order
  */
 template<typename T>
 std::list<Node<T> *> BinarySearchTree<T>::inOrder() const {
-
-    std::list<Node<T> *> in_order;
     Node<T> *cursor = root;
     std::stack<Node<T> *> path;
-    do {
+
+    std::list<Node<T> *> in_order;
+    while (!path.empty() || cursor) {
         if (!cursor) {
             Node<T> *temp = path.top();
             in_order.emplace_back(temp);
@@ -173,39 +175,96 @@ std::list<Node<T> *> BinarySearchTree<T>::inOrder() const {
             path.push(cursor);
             cursor = cursor->left;
         }
-
-    }while (!path.empty() || cursor);
+    }
 
     return in_order;
 }
 
 /**
- * Prints nodes from each level of the tree in separate line
+ * Traverses tree in post-order (Left, Right, Root)
+ * Returns a list of nodes
  */
 template<typename T>
-void BinarySearchTree<T>::levelOrder() const {
-    std::queue<Node<T> *> unvisited_nodes;
-    Node<T> *cursor = root;
-    unvisited_nodes.push(cursor);
-    size_t len = unvisited_nodes.size();
+std::list<Node<T> *> BinarySearchTree<T>::postOrder() const {
+    std::stack<Node<T> *> path;
+    path.push(root);
 
-    while (!unvisited_nodes.empty()) {
-        while (len > 0) {
-            std::cout << cursor->value << ' ';
-            if (cursor->left) {
-                unvisited_nodes.push(cursor->left);
+    std::deque<Node<T> *> post_order;
+    while (!path.empty()) {
+        Node<T> * cursor = path.top();
+        path.pop();
+        post_order.push_front(cursor);
+
+        if (cursor->left) {
+            path.push(cursor->left);
+        }
+        if (cursor->right) {
+            path.push(cursor->right);
+        }
+    }
+
+    return std::list<Node<T> *>(post_order.begin(), post_order.end());
+}
+
+/**
+ * Traverses tree in pre-order (Root, Left, Right)
+ * Returns a list of nodes
+ */
+template<typename T>
+std::list<Node<T> *> BinarySearchTree<T>::preOrder() const {
+    std::stack<Node<T> *> path;
+    path.push(root);
+
+    std::list<Node<T> *> pre_order;
+    while (!path.empty()) {
+        Node<T> *cursor = path.top();
+        path.pop();
+        pre_order.emplace_back(cursor);
+
+        if (cursor->right) {
+            path.push(cursor->right);
+        }
+        if (cursor->left) {
+            path.push(cursor->left);
+        }
+    }
+    return pre_order;
+}
+
+/**
+ *  Traverses tree in level order (from left to right, level by level).
+ *  Returns a  vector of vectors with nodes.
+ */
+template<typename T>
+std::vector<std::vector<Node<T> *>> BinarySearchTree<T>::levelOrder() const {
+
+    std::vector<std::vector<Node<T> *>> level_order;
+    std::deque<Node<T> *> q;
+
+    if (root){
+        q.push_back(root);
+    }
+
+    while (!q.empty()) {
+        size_t size = q.size();
+        std::vector<Node<T> *> inner_level_order;
+
+        while (size--) {
+            Node<T> *cursor = q.front();
+            q.pop_front();
+            inner_level_order.push_back(cursor);
+            if (cursor->left){
+                q.push_back(cursor->left);
             }
             if (cursor->right) {
-                unvisited_nodes.push(cursor->right);
+                q.push_back(cursor->right);
             }
-            len--;
-            unvisited_nodes.pop();
-            cursor = unvisited_nodes.front();
         }
-        std::cout << '\n';
-        len = unvisited_nodes.size();
+
+        level_order.push_back(inner_level_order);
     }
-    std::cout << '\n';
+
+    return level_order;
 }
 
 template<typename T>
