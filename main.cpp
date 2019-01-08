@@ -1,4 +1,6 @@
 #include "BinarySearchTree.hpp"
+#include "vector_helpers.hpp"
+#include "timeit.hpp"
 
 #include <iostream>
 #include <random>
@@ -6,31 +8,37 @@
 #include <iterator>
 
 int main() {
-    const int NUM_NUMS = 1000;
-    const int MIN_VAL = -10000, MAX_VAL = 10000;
 
-    // fill a vector with NUM_NUMS random numbers in the range [MIN_VAL, MAX_VAL] that follow a uniform distribution
-    std::random_device dev;
-    std::mt19937 gen(dev());
-    std::uniform_int_distribution<int> dist(MIN_VAL, MAX_VAL);
-    std::vector<int> nums(NUM_NUMS);
-    std::generate(nums.begin(), nums.end(), [&dist, &gen]() {
-        return dist(gen);
-    });
+    auto nums = generate_random_vector<int>(10'000'000, -1'000, 1'000);
 
+    ti::ti insertion_timer("Insertion of nodes");
     BinarySearchTree<int> tree;
     for (auto const &item:nums) {
         tree.insert(item);
     }
+    insertion_timer.finish();
+
+    ti::ti level_order_timer("Level order traversal");
+    auto level_order = tree.levelOrder();
+    level_order_timer.finish();
+
+    ti::ti inorder_timer("Inorder traversal");
+    std::vector<Node<int> *> inorder = tree.inOrder();
+    inorder_timer.finish();
+
+
+    // create the random device, the generator and the distribution
+    std::random_device dev;
+    std::mt19937 gen(dev());
 
     // Rearrange the elements randomly
     std::shuffle(nums.begin(), nums.end(), gen);
-    int lim = NUM_NUMS / 100;
-    for (int i = 0; i < lim; ++i) {
-        if (!tree.isHeightBalanced()) {
-            std::cout << "Tree is unbalanced!";
-            break;
-        }
+    size_t lim = nums.size() / 100;
+
+    ti::ti erase_time("Erase of all nodes");
+    for (size_t i = 0; i < lim; ++i) {
         tree.erase(nums[i]);
     }
+    erase_time.finish();
+
 }

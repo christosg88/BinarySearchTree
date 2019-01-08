@@ -22,9 +22,9 @@ public:
         return stream;
     }
     std::vector<std::vector<Node<T> *>> levelOrder() const;
-    std::list<Node<T> *> inOrder() const;
-    std::list<Node<T> *> postOrder() const;
-    std::list<Node<T> *> preOrder() const;
+    std::vector<Node<T> *> inOrder() const;
+    std::vector<Node<T> *> postOrder() const;
+    std::vector<Node<T> *> preOrder() const;
     bool isHeightBalanced() const;
 private:
     Node<T> *find(T const &value) const;
@@ -156,14 +156,14 @@ void BinarySearchTree<T>::erase(T const &value) {
 
 /**
  * Traverses tree in-order (Left, Root, Right)
- * Returns a list of nodes in ascending order
+ * @return a vector of nodes in ascending order
  */
 template<typename T>
-std::list<Node<T> *> BinarySearchTree<T>::inOrder() const {
+std::vector<Node<T> *> BinarySearchTree<T>::inOrder() const {
     Node<T> *cursor = root;
     std::stack<Node<T> *> path;
 
-    std::list<Node<T> *> in_order;
+    std::vector<Node<T> *> in_order;
     while (!path.empty() || cursor) {
         if (!cursor) {
             Node<T> *temp = path.top();
@@ -182,10 +182,10 @@ std::list<Node<T> *> BinarySearchTree<T>::inOrder() const {
 
 /**
  * Traverses tree in post-order (Left, Right, Root)
- * Returns a list of nodes
+ * @return a vector of nodes
  */
 template<typename T>
-std::list<Node<T> *> BinarySearchTree<T>::postOrder() const {
+std::vector<Node<T> *> BinarySearchTree<T>::postOrder() const {
     std::stack<Node<T> *> path;
     path.push(root);
 
@@ -203,19 +203,19 @@ std::list<Node<T> *> BinarySearchTree<T>::postOrder() const {
         }
     }
 
-    return std::list<Node<T> *>(post_order.begin(), post_order.end());
+    return std::vector<Node<T> *>(post_order.begin(), post_order.end());
 }
 
 /**
  * Traverses tree in pre-order (Root, Left, Right)
- * Returns a list of nodes
+ * @return a vector of nodes
  */
 template<typename T>
-std::list<Node<T> *> BinarySearchTree<T>::preOrder() const {
+std::vector<Node<T> *> BinarySearchTree<T>::preOrder() const {
     std::stack<Node<T> *> path;
     path.push(root);
 
-    std::list<Node<T> *> pre_order;
+    std::vector<Node<T> *> pre_order;
     while (!path.empty()) {
         Node<T> *cursor = path.top();
         path.pop();
@@ -233,7 +233,7 @@ std::list<Node<T> *> BinarySearchTree<T>::preOrder() const {
 
 /**
  *  Traverses tree in level order (from left to right, level by level).
- *  Returns a  vector of vectors with nodes.
+ *  @return a vector of vectors with nodes.
  */
 template<typename T>
 std::vector<std::vector<Node<T> *>> BinarySearchTree<T>::levelOrder() const {
@@ -267,21 +267,45 @@ std::vector<std::vector<Node<T> *>> BinarySearchTree<T>::levelOrder() const {
     return level_order;
 }
 
+/**
+ *  Traverses the tree the same way as level order (BFS) and checks if every node
+ *  is height balanced (the depth of the two subtrees of every node never differ by more than 1)
+ *  @return true if it is balanced, false if not
+ */
 template<typename T>
 bool BinarySearchTree<T>::isHeightBalanced() const {
-    std::list<Node<T> *> in_order_list = inOrder();
-    for (Node<T> * const &item:in_order_list) {
-        if (balanceFactor(item) > 1 || balanceFactor(item) < -1) {
-            return false;
+    std::deque<Node<T> *> q;
+
+    if (root){
+        q.push_back(root);
+    }
+
+    while (!q.empty()) {
+        size_t size = q.size();
+        while (size--) {
+            Node<T> *cursor = q.front();
+            q.pop_front();
+
+            if (balanceFactor(cursor) > 1 || balanceFactor(cursor) < -1) {
+                return false;
+            }
+
+            if (cursor->left){
+                q.push_back(cursor->left);
+            }
+            if (cursor->right) {
+                q.push_back(cursor->right);
+            }
         }
     }
+
+
     return true;
 }
 
 /**
- * Returns the height of a node
- * if node doesn't exists returns -1
  * @param cursor Node whose height will be returned
+ * @return the height of the node if the node doesn't exists returns -1
  */
 template<typename T>
 int BinarySearchTree<T>::height(Node<T> const *cursor) const {
@@ -289,9 +313,8 @@ int BinarySearchTree<T>::height(Node<T> const *cursor) const {
 }
 
 /**
- * Returns a pointer to the first node that has node->value = value
- * if node doesn't exists returns a nullptr
  * @param value The value to compare the nodes to
+ * @return a pointer to the first node that has node->value = value or nullptr if it doesn't exists
  */
 template<typename T>
 Node<T> *BinarySearchTree<T>::find(T const &value) const {
@@ -323,8 +346,8 @@ void BinarySearchTree<T>::updateHeights(Node<T> *cursor) {
 }
 
 /**
- * Returns the balance factor (left subtree height – right subtree height) of cursor.
  * @param cursor The node whose balance factor is returned
+ * @return the balance factor (left subtree height – right subtree height) of cursor.
  */
 template<typename T>
 int BinarySearchTree<T>::balanceFactor(Node<T> const *cursor) const{
@@ -411,8 +434,8 @@ void BinarySearchTree<T>::balanceDeletion(Node<T> *cursor) {
 }
 
 /**
- * Returns a pointer to the node that has the larger height from cursor's children
  * @param cursor The node whose children are compared
+ * @return a pointer to the node that has the larger height from cursor's children
  */
 template<typename T>
 Node<T> *BinarySearchTree<T>::highestChild(Node<T> const *cursor) const {
