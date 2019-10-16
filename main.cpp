@@ -1,23 +1,44 @@
 #include "BinarySearchTree.hpp"
+#include "vector_helpers.hpp"
+#include "timeit.hpp"
 
 #include <iostream>
+#include <random>
+#include <algorithm>
+#include <iterator>
 
 int main() {
+
+    auto nums = generate_random_vector<int>(10'000'000, -1'000, 1'000);
+
+    ti::ti insertion_timer("Insertion of nodes");
     BinarySearchTree<int> tree;
-    tree.insert(50);
-    tree.insert(25);
-    tree.insert(75);
-    tree.insert(10);
-    tree.insert(60);
-    tree.insert(30);
-    tree.insert(80);
-    tree.insert(5);
-    tree.insert(55);
-    tree.insert(15);
-    tree.insert(27);
-    tree.insert(1);
-    tree.levelOrder();
-    tree.erase(80);
-    tree.levelOrder();
-    return 0;
+    for (auto const &item:nums) {
+        tree.insert(item);
+    }
+    insertion_timer.finish();
+
+    ti::ti level_order_timer("Level order traversal");
+    auto level_order = tree.levelOrder();
+    level_order_timer.finish();
+
+    ti::ti inorder_timer("Inorder traversal");
+    std::vector<Node<int> *> inorder = tree.inOrder();
+    inorder_timer.finish();
+
+
+    // create the random device, the generator and the distribution
+    std::random_device dev;
+    std::mt19937 gen(dev());
+
+    // Rearrange the elements randomly
+    std::shuffle(nums.begin(), nums.end(), gen);
+    size_t lim = nums.size() / 100;
+
+    ti::ti erase_time("Erase of all nodes");
+    for (size_t i = 0; i < lim; ++i) {
+        tree.erase(nums[i]);
+    }
+    erase_time.finish();
+
 }
